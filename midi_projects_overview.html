@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MIDI 音乐制作项目梳理 · pro1 / pro2 / pro3</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --card2: #20243a;
+    --accent1: #6c63ff;
+    --accent2: #ff6584;
+    --accent3: #43e97b;
+    --accent4: #f7971e;
+    --text: #e2e8f0;
+    --muted: #8892a4;
+    --border: #2d3245;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.7; }
+
+  /* ── Header ── */
+  header {
+    background: linear-gradient(135deg, #1a1d27 0%, #0f1117 60%, #1a102e 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 40px 32px;
+  }
+  header h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.5px; }
+  header h1 span { color: var(--accent1); }
+  header p { color: var(--muted); margin-top: 8px; font-size: 0.95rem; }
+  .tag-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .tag { background: rgba(108,99,255,.15); border: 1px solid rgba(108,99,255,.4); color: #a5a0ff; border-radius: 20px; padding: 2px 12px; font-size: 0.78rem; font-weight: 600; }
+  .tag.green { background: rgba(67,233,123,.12); border-color: rgba(67,233,123,.35); color: #5df5a0; }
+  .tag.orange { background: rgba(247,151,30,.12); border-color: rgba(247,151,30,.35); color: #ffc05a; }
+  .tag.red { background: rgba(255,101,132,.12); border-color: rgba(255,101,132,.35); color: #ff9aae; }
+
+  /* ── Layout ── */
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px; }
+  section { margin-bottom: 48px; }
+  h2 { font-size: 1.2rem; font-weight: 700; color: #fff; border-left: 3px solid var(--accent1); padding-left: 12px; margin-bottom: 20px; }
+  h3 { font-size: 1rem; font-weight: 600; color: var(--accent1); margin-bottom: 10px; }
+
+  /* ── Evolution Banner ── */
+  .evolution {
+    display: flex; align-items: center; gap: 0; background: var(--card);
+    border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 40px;
+  }
+  .evo-step { flex: 1; padding: 24px 20px; text-align: center; position: relative; }
+  .evo-step + .evo-step::before {
+    content: '▶'; position: absolute; left: -10px; top: 50%; transform: translateY(-50%);
+    color: var(--muted); font-size: 14px;
+  }
+  .evo-step .num { font-size: 2rem; font-weight: 800; }
+  .evo-step .label { font-size: 0.75rem; color: var(--muted); margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
+  .evo-step .title { font-size: 0.9rem; font-weight: 600; margin-top: 8px; }
+  .evo-step .desc { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
+  .evo-step.p1 .num { color: #6c63ff; }
+  .evo-step.p2 .num { color: #43e97b; }
+  .evo-step.p3 .num { color: #f7971e; }
+  .evo-step.p1 { border-right: 1px solid var(--border); }
+  .evo-step.p2 { border-right: 1px solid var(--border); }
+
+  /* ── 3-Col Grid ── */
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+  .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .card-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .ci-purple { background: rgba(108,99,255,.2); }
+  .ci-green { background: rgba(67,233,123,.15); }
+  .ci-orange { background: rgba(247,151,30,.15); }
+  .card-title { font-size: 1rem; font-weight: 700; }
+
+  /* ── File Tree ── */
+  .tree { font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.78rem; line-height: 1.9; color: var(--muted); background: #12141e; border-radius: 8px; padding: 16px 20px; margin-top: 12px; }
+  .tree .dir { color: #7ec8e3; }
+  .tree .py { color: #a5f3a5; }
+  .tree .bat { color: #ffd070; }
+  .tree .txt { color: #c9a9ff; }
+  .tree .yaml { color: #ff9aae; }
+  .tree .root { color: #fff; font-weight: 700; }
+
+  /* ── Module Cards ── */
+  .mod-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .mod { background: var(--card2); border-radius: 10px; padding: 16px 20px; border-left: 3px solid; }
+  .mod.m1 { border-color: #6c63ff; }
+  .mod.m2 { border-color: #43e97b; }
+  .mod.m3 { border-color: #f7971e; }
+  .mod.m4 { border-color: #ff6584; }
+  .mod h4 { font-size: 0.88rem; font-weight: 700; margin-bottom: 8px; }
+  .mod ul { padding-left: 16px; font-size: 0.8rem; color: var(--muted); }
+  .mod ul li { margin-bottom: 4px; }
+
+  /* ── Flow ── */
+  .flow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 20px 0; }
+  .flow-box { background: var(--card2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 18px; font-size: 0.82rem; font-weight: 600; text-align: center; min-width: 130px; }
+  .flow-arrow { color: var(--muted); font-size: 1.1rem; }
+  .fb-purple { border-color: rgba(108,99,255,.5); color: #a5a0ff; }
+  .fb-green { border-color: rgba(67,233,123,.4); color: #5df5a0; }
+  .fb-orange { border-color: rgba(247,151,30,.4); color: #ffc05a; }
+  .fb-red { border-color: rgba(255,101,132,.4); color: #ff9aae; }
+
+  /* ── Compare Table ── */
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  thead tr { background: var(--card2); }
+  th { padding: 12px 16px; text-align: left; font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 1px; border-bottom: 1px solid var(--border); }
+  td { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: top; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .dot-p { background: #6c63ff; }
+  .dot-g { background: #43e97b; }
+  .dot-o { background: #f7971e; }
+  .yes { color: #5df5a0; font-weight: 600; }
+  .no { color: var(--muted); }
+  .partial { color: #ffc05a; }
+
+  /* ── Stack Pills ── */
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .pill { background: var(--card2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 12px; font-size: 0.75rem; font-family: monospace; color: var(--muted); }
+  .pill.dep { color: #a5f3a5; border-color: rgba(165,243,165,.3); }
+
+  /* ── Insight Cards ── */
+  .insights { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .insight { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+  .insight .ico { font-size: 24px; margin-bottom: 10px; }
+  .insight h4 { font-size: 0.88rem; font-weight: 700; margin-bottom: 8px; }
+  .insight p { font-size: 0.8rem; color: var(--muted); }
+
+  /* ── Recommendation ── */
+  .rec { background: linear-gradient(135deg, rgba(108,99,255,.12), rgba(67,233,123,.08)); border: 1px solid rgba(108,99,255,.3); border-radius: 12px; padding: 24px 28px; }
+  .rec h3 { color: #a5a0ff; margin-bottom: 14px; }
+  .rec ol { padding-left: 18px; font-size: 0.85rem; }
+  .rec ol li { margin-bottom: 10px; }
+  .rec ol li strong { color: var(--text); }
+
+  @media (max-width: 900px) {
+    .grid3, .mod-grid { grid-template-columns: 1fr; }
+    .insights { grid-template-columns: 1fr; }
+    .evolution { flex-direction: column; }
+    .evo-step + .evo-step::before { content: '▼'; left: 50%; top: -10px; transform: translateX(-50%); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎵 MIDI 音乐制作项目梳理 &nbsp;<span>pro1 → pro2 → pro3</span></h1>
+  <p>基于 all.docx 文档内容，对三个演进版本进行系统性梳理</p>
+  <div class="tag-row">
+    <span class="tag">Python 多声部音乐生成</span>
+    <span class="tag">MIDI 编排</span>
+    <span class="tag green">音频混合 DAW</span>
+    <span class="tag orange">批处理工作站</span>
+    <span class="tag red">SoundFont 音色引擎</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ── 演进全景 ── -->
+  <section>
+    <h2>演进全景</h2>
+    <div class="evolution">
+      <div class="evo-step p1">
+        <div class="num">PRO1</div>
+        <div class="label">原型阶段</div>
+        <div class="title">Python 音乐概念库</div>
+        <div class="desc">14 个独立模块 · 纯 Python 实验<br>建立核心类与算法原型</div>
+      </div>
+      <div class="evo-step p2">
+        <div class="num">PRO2</div>
+        <div class="label">工程化阶段</div>
+        <div class="title">多轨音乐生产系统</div>
+        <div class="desc">三阶段流水线 + GUI DAW<br>完整依赖 · Docker 支持</div>
+      </div>
+      <div class="evo-step p3">
+        <div class="num">PRO3</div>
+        <div class="label">产品化阶段</div>
+        <div class="title">MusicStudio 批处理工作站</div>
+        <div class="desc">Windows 原生 .bat / .ps1<br>模块分离 · 零代码操作界面</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 各项目结构 ── -->
+  <section>
+    <h2>项目结构对比</h2>
+    <div class="grid3">
+
+      <!-- PRO1 -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon ci-purple">🔬</div>
+          <div>
+            <div class="card-title">pro1 — 概念原型</div>
+            <div style="font-size:.75rem;color:var(--muted)">14 个 Python 文件 · 纯算法实验</div>
+          </div>
+        </div>
+        <div class="tree">
+<span class="root">pro1/</span>
+├─ <span class="py">1.py</span>   <span style="color:#5a6280">MultiTrackMusicGenerator 架构</span>
+├─ <span class="py">2.py</span>   <span style="color:#5a6280">InstrumentTrack + 音符合成</span>
+├─ <span class="py">3.py</span>   <span style="color:#5a6280">AudioSynthesizer 波形生成</span>
+├─ <span class="py">4.py</span>   <span style="color:#5a6280">MusicMixer 混音核心</span>
+├─ <span class="py">5.py</span>   <span style="color:#5a6280">create_song_example 示例</span>
+├─ <span class="py">6.py</span>   <span style="color:#5a6280">AdvancedMusicGenerator 扩展</span>
+├─ <span class="py">7.py</span>   <span style="color:#5a6280">音效处理占位</span>
+├─ <span class="py">8.py</span>   <span style="color:#5a6280">AdvancedMusicGenerator 配置加载</span>
+├─ <span class="py">9.py</span>   <span style="color:#5a6280">DynamicOrchestrator 动态声部</span>
+├─ <span class="py">10.py</span>  <span style="color:#5a6280">IntelligentOrchestrator 情绪配器</span>
+├─ <span class="py">11.py</span>  <span style="color:#5a6280">音频分析工具</span>
+├─ <span class="py">12.py</span>  <span style="color:#5a6280">序列化与项目存储</span>
+├─ <span class="py">13.py</span>  <span style="color:#5a6280">AutomaticArranger 编排自动化</span>
+├─ <span class="py">14.py</span>  <span style="color:#5a6280">complete_orchestration_example</span>
+└─ <span class="txt">requirements.txt</span>
+        </div>
+        <div class="pill-row">
+          <span class="pill dep">pretty_midi</span>
+          <span class="pill dep">numpy</span>
+          <span class="pill dep">scipy</span>
+          <span class="pill dep">soundfile</span>
+          <span class="pill dep">librosa</span>
+          <span class="pill dep">pygame (可选)</span>
+        </div>
+      </div>
+
+      <!-- PRO2 -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon ci-green">🏭</div>
+          <div>
+            <div class="card-title">pro2 — 工程化系统</div>
+            <div style="font-size:.75rem;color:var(--muted)">三阶段流水线 + GUI DAW + Docker</div>
+          </div>
+        </div>
+        <div class="tree">
+<span class="root">pro2/</span>
+├─ <span class="dir">multi_track_music/</span>   <span style="color:#5a6280">核心生产线</span>
+│  ├─ <span class="py">1_generate_params.py</span>
+│  ├─ <span class="py">2_json_to_midi.py</span>
+│  ├─ <span class="py">3_midi_to_audio.py</span>
+│  └─ <span class="py">3_daw_gui.py</span>  <span style="color:#5a6280">图形化DAW</span>
+├─ <span class="dir">exa/</span>   <span style="color:#5a6280">高级实验特性</span>
+│  ├─ <span class="py">1.py</span>  <span style="color:#5a6280">编译/打包系统</span>
+│  ├─ <span class="py">2.py</span>  <span style="color:#5a6280">完整系统集成</span>
+│  ├─ <span class="py">3-1.py / 3-2.py</span>  <span style="color:#5a6280">DAW扩展</span>
+│  └─ <span class="py">4.py</span>  <span style="color:#5a6280">高级功能</span>
+├─ <span class="dir">mayvbe/</span>   <span style="color:#5a6280">备选/实验脚本×17</span>
+├─ <span class="py">1.py ~ 8.py</span>   <span style="color:#5a6280">优化渲染模块</span>
+├─ <span class="yaml">config.yaml</span>   <span style="color:#5a6280">全局系统配置</span>
+├─ <span class="py">setup.py</span>   <span style="color:#5a6280">包安装配置</span>
+├─ <span class="py">test_audio_engine.py</span>
+└─ <span class="txt">dockerfile.txt</span>   <span style="color:#5a6280">容器化部署</span>
+        </div>
+        <div class="pill-row">
+          <span class="pill dep">pretty_midi</span>
+          <span class="pill dep">pygame_gui</span>
+          <span class="pill dep">matplotlib</span>
+          <span class="pill dep">pydub</span>
+          <span class="pill dep">sounddevice</span>
+          <span class="pill dep">music21</span>
+          <span class="pill dep">docker</span>
+        </div>
+      </div>
+
+      <!-- PRO3 -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon ci-orange">🎛️</div>
+          <div>
+            <div class="card-title">pro3 — MusicStudio 产品</div>
+            <div style="font-size:.75rem;color:var(--muted)">Windows 批处理工作站 v2.0</div>
+          </div>
+        </div>
+        <div class="tree">
+<span class="root">MusicStudio/</span>
+├─ <span class="bat">MusicStudio.bat</span>   <span style="color:#5a6280">主控入口</span>
+├─ <span class="dir">00_Setup/</span>   <span style="color:#5a6280">安装脚本</span>
+│  ├─ <span class="bat">Install.bat</span>
+│  └─ <span class="dir">OfflinePackages/ Requirements/</span>
+├─ <span class="dir">01_ParamGen/</span>   <span style="color:#5a6280">参数生成模块</span>
+│  ├─ <span class="bat">ParamGen.bat</span>
+│  ├─ <span class="py">ParamGen.ps1</span>  <span style="color:#5a6280">核心逻辑</span>
+│  └─ <span class="dir">Templates/</span>
+├─ <span class="dir">02_MIDIGen/</span>
+│  └─ <span class="bat">MIDIGen.bat</span>
+├─ <span class="dir">03_AudioMix/</span>
+│  └─ <span class="bat">AudioMix.bat</span>  <span style="color:#5a6280">完整效果器菜单</span>
+├─ <span class="dir">Tools/</span>
+│  ├─ <span class="py">midi_utils.py</span>
+│  ├─ <span class="py">audio_effects.py</span>
+│  ├─ <span class="bat">BatchProcess.bat</span>
+│  ├─ <span class="bat">ProcessVocal.bat</span>
+│  └─ <span class="bat">ConvertMIDI.bat</span>
+├─ <span class="dir">Config/ Data/ Output/ Libs/</span>
+└─ <span class="bat">QuickFix.bat / GenerateConfig.bat</span>
+        </div>
+        <div class="pill-row">
+          <span class="pill dep">Windows 7+</span>
+          <span class="pill dep">Python (轻量调用)</span>
+          <span class="pill dep">pygame</span>
+          <span class="pill dep">FluidR3_GM.sf2</span>
+          <span class="pill dep">ffmpeg (导出MP3)</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── 三阶段流水线 ── -->
+  <section>
+    <h2>共同核心流水线（三版本一致）</h2>
+    <div class="flow">
+      <div class="flow-box fb-purple">🎼 参数配置<br><small>乐器 JSON / 情绪 / 和弦</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box fb-green">🎹 MIDI 生成<br><small>音轨 .mid 文件</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box fb-orange">🔊 音频合成<br><small>SoundFont 渲染</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box fb-red">💿 混音导出<br><small>WAV / MP3 / FLAC</small></div>
+    </div>
+    <div class="mod-grid" style="margin-top:20px">
+      <div class="mod m1">
+        <h4>模块 1 · 参数生成</h4>
+        <ul>
+          <li>乐器类型：旋律 / 打击 / 和声</li>
+          <li>音符序列自动生成（大调音阶 / 和弦琶音）</li>
+          <li>输出 JSON 配置文件至 instruments/</li>
+          <li>pro3 新增：PowerShell 参数化 CLI + 批量模式</li>
+        </ul>
+      </div>
+      <div class="mod m2">
+        <h4>模块 2 · MIDI 生成</h4>
+        <ul>
+          <li>读取 JSON → 写出 .mid 文件</li>
+          <li>支持曲速（BPM）、拍号设置</li>
+          <li>多通道：钢琴ch0 / 贝斯ch1 / 鼓ch9 / 弦乐ch2</li>
+          <li>pro2 起支持图形化 DAW 实时编辑</li>
+        </ul>
+      </div>
+      <div class="mod m3">
+        <h4>模块 3 · 音频混合</h4>
+        <ul>
+          <li>MIDI → WAV（FluidSynth / SoundFont）</li>
+          <li>多轨混音：音量 / 声相 / 淡入淡出</li>
+          <li>效果链：混响 / 均衡器 / 压缩器 / 延迟</li>
+          <li>pro3 新增人声处理（音高校正 / 和声）</li>
+        </ul>
+      </div>
+      <div class="mod m4">
+        <h4>模块 4 · 高级特性（pro2/3）</h4>
+        <ul>
+          <li>OptimizedRenderer：numpy 向量化批量渲染</li>
+          <li>项目编译打包（zip + base64 + pickle）</li>
+          <li>Docker 容器化一键部署</li>
+          <li>采样管理器 / 批量 MIDI 转换工具</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 功能对比表 ── -->
+  <section>
+    <h2>功能对比总表</h2>
+    <div class="card" style="padding:0;overflow:hidden">
+    <table>
+      <thead>
+        <tr>
+          <th>功能 / 特性</th>
+          <th><span class="dot dot-p"></span>pro1</th>
+          <th><span class="dot dot-g"></span>pro2</th>
+          <th><span class="dot dot-o"></span>pro3</th>
+          <th>说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>多声部音乐生成</td>
+          <td class="yes">✓ 原型</td>
+          <td class="yes">✓ 完整</td>
+          <td class="yes">✓ 批处理</td>
+          <td style="color:var(--muted)">三版本均支持钢琴/贝斯/鼓/弦乐/铜管</td>
+        </tr>
+        <tr>
+          <td>JSON 参数配置</td>
+          <td class="partial">△ 硬编码</td>
+          <td class="yes">✓ 完整</td>
+          <td class="yes">✓ 模板化</td>
+          <td style="color:var(--muted)">pro3 增加 Templates/ 目录</td>
+        </tr>
+        <tr>
+          <td>MIDI 生成</td>
+          <td class="yes">✓ pretty_midi</td>
+          <td class="yes">✓ 完整流水线</td>
+          <td class="yes">✓ bat 接口</td>
+          <td style="color:var(--muted)">pro3 的 midi_utils.py 提供简化版</td>
+        </tr>
+        <tr>
+          <td>图形化 DAW</td>
+          <td class="no">✗</td>
+          <td class="yes">✓ pygame_gui</td>
+          <td class="no">✗ (仅命令行)</td>
+          <td style="color:var(--muted)">pro2 的 3_daw_gui.py 是核心亮点</td>
+        </tr>
+        <tr>
+          <td>情绪智能配器</td>
+          <td class="yes">✓ 5种情绪</td>
+          <td class="yes">✓ 扩展</td>
+          <td class="no">✗</td>
+          <td style="color:var(--muted)">pro1 10.py: happy/sad/epic/calm/tense</td>
+        </tr>
+        <tr>
+          <td>动态声部管理</td>
+          <td class="yes">✓ 最多16轨</td>
+          <td class="yes">✓ 最多24轨</td>
+          <td class="partial">△ 批量模式</td>
+          <td style="color:var(--muted)">静音组 / 独奏层 / 动态增删</td>
+        </tr>
+        <tr>
+          <td>效果器处理</td>
+          <td class="partial">△ 框架占位</td>
+          <td class="yes">✓ 完整链路</td>
+          <td class="yes">✓ bat 菜单</td>
+          <td style="color:var(--muted)">混响/EQ/压缩/延迟/合唱</td>
+        </tr>
+        <tr>
+          <td>人声处理</td>
+          <td class="no">✗</td>
+          <td class="partial">△ 实验性</td>
+          <td class="yes">✓ ProcessVocal</td>
+          <td style="color:var(--muted)">音高校正 / 和声生成 / 降噪</td>
+        </tr>
+        <tr>
+          <td>项目打包 / 编译</td>
+          <td class="no">✗</td>
+          <td class="yes">✓ exa/1.py</td>
+          <td class="partial">△ 快捷方式</td>
+          <td style="color:var(--muted)">pro2 支持 zip+pickle 打包</td>
+        </tr>
+        <tr>
+          <td>Docker 容器化</td>
+          <td class="no">✗</td>
+          <td class="yes">✓ dockerfile</td>
+          <td class="no">✗</td>
+          <td style="color:var(--muted)">pro2 提供 fluidsynth 镜像</td>
+        </tr>
+        <tr>
+          <td>批量处理</td>
+          <td class="no">✗</td>
+          <td class="partial">△ 部分脚本</td>
+          <td class="yes">✓ BatchProcess.bat</td>
+          <td style="color:var(--muted)">pro3 支持批量 MIDI/音频处理</td>
+        </tr>
+        <tr>
+          <td>无代码操作界面</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+          <td class="yes">✓ 菜单驱动</td>
+          <td style="color:var(--muted)">纯 .bat 交互菜单，无需 Python 知识</td>
+        </tr>
+        <tr>
+          <td>离线安装包</td>
+          <td class="no">✗</td>
+          <td class="partial">△ venv 脚本</td>
+          <td class="yes">✓ OfflinePackages/</td>
+          <td style="color:var(--muted)">pro3 支持断网部署</td>
+        </tr>
+        <tr>
+          <td>键盘快捷键</td>
+          <td class="no">✗</td>
+          <td class="yes">✓ press.txt</td>
+          <td class="no">✗</td>
+          <td style="color:var(--muted)">空格/S/Ctrl+O/E/S/Z/Y/方向键</td>
+        </tr>
+        <tr>
+          <td>分轨导出 (stems)</td>
+          <td class="yes">✓ export_stems</td>
+          <td class="yes">✓ stems/目录</td>
+          <td class="yes">✓ Output/Renders</td>
+          <td style="color:var(--muted)">便于后期二次混音</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <!-- ── 关键类与算法 ── -->
+  <section>
+    <h2>关键类 & 算法（来自 pro1 原型，延续至 pro2）</h2>
+    <div class="grid3">
+      <div class="card">
+        <h3>InstrumentTrack</h3>
+        <p style="font-size:.82rem;color:var(--muted)">封装单声部 MIDI + 音频，通过 <code style="color:#a5f3a5">pretty_midi</code> 合成，支持 program 编号（0=钢琴, 33=电贝斯, 40=小提琴…）</p>
+      </div>
+      <div class="card">
+        <h3>MusicMixer</h3>
+        <p style="font-size:.82rem;color:var(--muted)">多轨混音核心，立体声缓冲区累加，支持声相定位（0~1）、音量调节、防削波归一化，导出 WAV。</p>
+      </div>
+      <div class="card">
+        <h3>DynamicOrchestrator</h3>
+        <p style="font-size:.82rem;color:var(--muted)">动态声部管理器，支持最多 24 轨，带静音组（mute_group）、独奏层（solo_layer），实时增删声部。</p>
+      </div>
+      <div class="card">
+        <h3>IntelligentOrchestrator</h3>
+        <p style="font-size:.82rem;color:var(--muted)">根据情绪（happy/sad/epic/calm/tense）与复杂度（1-5）自动选择乐器组合，立体声场对称分布。</p>
+      </div>
+      <div class="card">
+        <h3>AutomaticArranger</h3>
+        <p style="font-size:.82rem;color:var(--muted)">按小节号安排编排事件（add/fade_in/fade_out/volume_change），支持回调函数实时更新 UI。</p>
+      </div>
+      <div class="card">
+        <h3>OptimizedRenderer (pro2)</h3>
+        <p style="font-size:.82rem;color:var(--muted)">2048 帧缓冲区 + 声相查找表，使用 numpy 向量化操作避免 Python 循环，float32 低内存渲染。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 关键洞察 ── -->
+  <section>
+    <h2>关键洞察 & 注意事项</h2>
+    <div class="insights">
+      <div class="insight">
+        <div class="ico">⚠️</div>
+        <h4>pro1 中的 mayvbe/ 目录 (pro2)</h4>
+        <p>pro2/mayvbe/ 包含 17 个备选脚本（1.py~17.py），是功能探索的"草稿区"，未整合进主流水线，可作为功能扩展备用参考。</p>
+      </div>
+      <div class="insight">
+        <div class="ico">🔧</div>
+        <h4>pro3 已知缺失文件</h4>
+        <p>fix.txt 显示需要重新安装 numpy/pygame/pretty_midi/soundfile；SamplerTool.bat 文件大小为 0，未实现；Install.ps1 在结构图中标注但实际未见。</p>
+      </div>
+      <div class="insight">
+        <div class="ico">🎯</div>
+        <h4>依赖重量级差异</h4>
+        <p>pro1/2 依赖 numpy + scipy + librosa + pretty_midi 重量级 Python 栈；pro3 通过 .bat 调用轻量 Python 脚本，核心不依赖完整 scipy 栈，降低部署门槛。</p>
+      </div>
+      <div class="insight">
+        <div class="ico">🎵</div>
+        <h4>SoundFont 是核心依赖</h4>
+        <p>三版本均依赖 FluidR3_GM.sf2（约 140MB），需手动下载放入 soundfonts/ 目录。pro3 还支持 Libs/SoundFonts/default.sf2 自定义路径，pro3 提供 PrepareOfflinePackages.bat 辅助。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 使用建议 ── -->
+  <section>
+    <h2>使用建议</h2>
+    <div class="rec">
+      <h3>🚀 按场景选择版本</h3>
+      <ol>
+        <li><strong>学习 / 二次开发算法</strong> → 使用 <code style="color:#a5a0ff">pro1</code>：14个文件各自独立，类结构清晰，适合学习 MIDI 生成与混音原理。</li>
+        <li><strong>需要 GUI 可视化编辑</strong> → 使用 <code style="color:#5df5a0">pro2/multi_track_music/3_daw_gui.py</code>：带波形显示的完整 DAW 界面，快捷键完善。</li>
+        <li><strong>非编程人员 / 批量生产</strong> → 使用 <code style="color:#ffc05a">pro3/MusicStudio</code>：双击 .bat 全菜单驱动，支持离线安装，无需了解 Python。</li>
+        <li><strong>Docker 部署 / 服务化</strong> → 使用 <code style="color:#5df5a0">pro2/dockerfile.txt</code>：基于 python:3.9-slim + fluidsynth 的完整镜像方案。</li>
+        <li><strong>整合到现有项目</strong> → 优先参考 <code style="color:#5df5a0">pro2/config.yaml</code> 的系统配置结构与 <code style="color:#a5a0ff">pro1/exa/1.py</code>（ProjectPackage 数据类）作为项目存储方案。</li>
+      </ol>
+    </div>
+  </section>
+
+  <div style="text-align:center;color:var(--muted);font-size:.75rem;padding:20px 0 40px">
+    基于 D:\allin\midi\ 目录内容梳理 · 生成时间 2026-05-18
+  </div>
+
+</div>
+</body>
+</html>
