@@ -1,5 +1,7 @@
 # midi
 
+> 仓库：<https://gitee.com/siwpan/midi> ｜ 许可：MIT（见 [LICENSE](LICENSE)）
+
 MusicStudio 音乐制作/DAW 项目，含四个阶段工程（pro1–pro4）与统一入口。
 
 ## 类型
