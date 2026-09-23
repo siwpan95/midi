@@ -33,13 +33,20 @@ if %errorLevel% neq 0 (
 )
 
 :: 检查FFmpeg
+:: 去本地化（2026-09-23）：解包目录不再写死 C 盘固定路径。
+::   解包目录 FFMPEG_HOME 优先级：环境变量 FFMPEG_HOME > 本 bat 所在目录（%~dp0 = 00_Setup\）
+::   的上级即 MusicStudio 根目录下的 Libs\ffmpeg。追加到 PATH 的目录恒为 %FFMPEG_HOME%\bin，
+::   与解包目录同源，故路径逻辑自洽；离线包路径同样按 %~dp0 推导，不依赖当前工作目录。
 echo [2/6] 检查FFmpeg...
+if not defined FFMPEG_HOME for %%I in ("%~dp0..") do set "MUSICSTUDIO_ROOT=%%~fI"
+if not defined FFMPEG_HOME set "FFMPEG_HOME=%MUSICSTUDIO_ROOT%\Libs\ffmpeg"
 where ffmpeg >nul 2>&1
 if %errorLevel% neq 0 (
-    echo 正在安装FFmpeg...
-    powershell -Command "Expand-Archive -Path '.\00_Setup\OfflinePackages\ffmpeg.zip' -DestinationPath 'C:\ffmpeg' -Force"
-    setx PATH "%PATH%;C:\ffmpeg\bin" /M
-    echo FFmpeg安装完成
+    echo 正在安装FFmpeg 到 %FFMPEG_HOME% ...
+    powershell -Command "Expand-Archive -Path '%SCRIPT_DIR%OfflinePackages\ffmpeg.zip' -DestinationPath '%FFMPEG_HOME%' -Force"
+    setx PATH "%PATH%;%FFMPEG_HOME%\bin" /M
+    echo FFmpeg安装完成，解包目录：%FFMPEG_HOME%
+    echo 已将 %FFMPEG_HOME%\bin 追加到系统 PATH（需新开终端生效）
 ) else (
     echo FFmpeg已安装
 )
