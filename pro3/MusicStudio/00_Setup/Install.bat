@@ -20,13 +20,16 @@ if %errorLevel% neq 0 (
 :: 设置路径
 set SCRIPT_DIR=%~dp0
 cd /d "%SCRIPT_DIR%"
+:: 2026-09-23 去本地化：本脚本所有路径都按自身位置推导，不再依赖当前工作目录。
+::   SCRIPT_DIR = 本 bat 所在目录（00_Setup\）；MUSICSTUDIO_ROOT = 其上级（MusicStudio 根）。
+::   原先 cd /d %SCRIPT_DIR% 之后仍用 .\00_Setup\...，会叠加成 00_Setup\00_Setup\...，本次一并修正。
 
 :: 检查Python
 echo [1/6] 检查Python环境...
 python --version >nul 2>&1
 if %errorLevel% neq 0 (
     echo 未检测到Python，正在安装Python 3.9...
-    powershell -Command "Start-Process -Wait -FilePath '.\00_Setup\OfflinePackages\python-3.9.7-amd64.exe' -ArgumentList '/quiet InstallAllUsers=1 PrependPath=1'"
+    powershell -Command "Start-Process -Wait -FilePath '%SCRIPT_DIR%OfflinePackages\python-3.9.7-amd64.exe' -ArgumentList '/quiet InstallAllUsers=1 PrependPath=1'"
     echo Python安装完成
 ) else (
     echo Python已安装
@@ -38,7 +41,8 @@ if %errorLevel% neq 0 (
 ::   的上级即 MusicStudio 根目录下的 Libs\ffmpeg。追加到 PATH 的目录恒为 %FFMPEG_HOME%\bin，
 ::   与解包目录同源，故路径逻辑自洽；离线包路径同样按 %~dp0 推导，不依赖当前工作目录。
 echo [2/6] 检查FFmpeg...
-if not defined FFMPEG_HOME for %%I in ("%~dp0..") do set "MUSICSTUDIO_ROOT=%%~fI"
+:: MUSICSTUDIO_ROOT 必须**无条件**先算出来（否则用户预设了 FFMPEG_HOME 时，下面用到的 %MUSICSTUDIO_ROOT% 会是空值）
+for %%I in ("%~dp0..") do set "MUSICSTUDIO_ROOT=%%~fI"
 if not defined FFMPEG_HOME set "FFMPEG_HOME=%MUSICSTUDIO_ROOT%\Libs\ffmpeg"
 where ffmpeg >nul 2>&1
 if %errorLevel% neq 0 (
@@ -56,7 +60,7 @@ echo [3/6] 检查MIDI支持...
 reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MCI" /v "Sequencer" >nul 2>&1
 if %errorLevel% neq 0 (
     echo 配置MIDI支持...
-    powershell -Command "Start-Process -Wait -FilePath '.\00_Setup\OfflinePackages\VirtualMIDISynthSetup.exe' -ArgumentList '/S'"
+    powershell -Command "Start-Process -Wait -FilePath '%SCRIPT_DIR%OfflinePackages\VirtualMIDISynthSetup.exe' -ArgumentList '/S'"
     echo MIDI驱动程序安装完成
 ) else (
     echo MIDI支持已就绪
@@ -64,46 +68,46 @@ if %errorLevel% neq 0 (
 
 :: 安装Python依赖
 echo [4/6] 安装Python依赖库...
-if exist "requirements.txt" (
+if exist "%MUSICSTUDIO_ROOT%\requirements.txt" (
     echo 正在安装依赖包（这可能需要几分钟）...
     python -m pip install --upgrade pip
-    pip install -r requirements.txt --no-index --find-links=".\00_Setup\OfflinePackages\pip"
+    pip install -r "%MUSICSTUDIO_ROOT%\requirements.txt" --no-index --find-links="%SCRIPT_DIR%OfflinePackages\pip"
     echo 依赖安装完成
 ) else (
     echo 正在安装核心依赖...
     for %%p in (numpy,pygame,pretty_midi,soundfile) do (
         echo 安装 %%p...
-        pip install ".\00_Setup\OfflinePackages\pip\%%p*.whl"
+        pip install "%SCRIPT_DIR%OfflinePackages\pip\%%p*.whl"
     )
 )
 
 :: 下载音色库
 echo [5/6] 设置音色库...
-if not exist "Libs\SoundFonts" mkdir "Libs\SoundFonts"
-if not exist "Libs\SoundFonts\default.sf2" (
+if not exist "%MUSICSTUDIO_ROOT%\Libs\SoundFonts" mkdir "%MUSICSTUDIO_ROOT%\Libs\SoundFonts"
+if not exist "%MUSICSTUDIO_ROOT%\Libs\SoundFonts\default.sf2" (
     echo 正在下载免费音色库...
-    powershell -Command "Invoke-WebRequest -Uri 'https://downloads.sourceforge.net/project/fluid-soundfonts/FluidR3_GM/FluidR3_GM.sf2' -OutFile 'Libs\SoundFonts\default.sf2'"
+    powershell -Command "Invoke-WebRequest -Uri 'https://downloads.sourceforge.net/project/fluid-soundfonts/FluidR3_GM/FluidR3_GM.sf2' -OutFile '%MUSICSTUDIO_ROOT%\Libs\SoundFonts\default.sf2'"
     echo 音色库下载完成
 )
 
 :: 创建示例项目
 echo [6/6] 创建示例文件...
-if not exist "Data\Instruments" mkdir "Data\Instruments"
-if not exist "Data\MIDI" mkdir "Data\MIDI"
-if not exist "Data\Audio" mkdir "Data\Audio"
-if not exist "Output\Projects" mkdir "Output\Projects"
-if not exist "Output\Renders" mkdir "Output\Renders"
+if not exist "%MUSICSTUDIO_ROOT%\Data\Instruments" mkdir "%MUSICSTUDIO_ROOT%\Data\Instruments"
+if not exist "%MUSICSTUDIO_ROOT%\Data\MIDI" mkdir "%MUSICSTUDIO_ROOT%\Data\MIDI"
+if not exist "%MUSICSTUDIO_ROOT%\Data\Audio" mkdir "%MUSICSTUDIO_ROOT%\Data\Audio"
+if not exist "%MUSICSTUDIO_ROOT%\Output\Projects" mkdir "%MUSICSTUDIO_ROOT%\Output\Projects"
+if not exist "%MUSICSTUDIO_ROOT%\Output\Renders" mkdir "%MUSICSTUDIO_ROOT%\Output\Renders"
 
 :: 创建示例配置
-if not exist "Config\Defaults.ini" (
-    echo [System] > "Config\Defaults.ini"
-    echo SampleRate=44100 >> "Config\Defaults.ini"
-    echo Channels=2 >> "Config\Defaults.ini"
-    echo BufferSize=2048 >> "Config\Defaults.ini"
-    echo. >> "Config\Defaults.ini"
-    echo [Audio] >> "Config\Defaults.ini"
-    echo SoundFont=default.sf2 >> "Config\Defaults.ini"
-    echo NormalizeOutput=true >> "Config\Defaults.ini"
+if not exist "%MUSICSTUDIO_ROOT%\Config\Defaults.ini" (
+    echo [System] > "%MUSICSTUDIO_ROOT%\Config\Defaults.ini"
+    echo SampleRate=44100 >> "%MUSICSTUDIO_ROOT%\Config\Defaults.ini"
+    echo Channels=2 >> "%MUSICSTUDIO_ROOT%\Config\Defaults.ini"
+    echo BufferSize=2048 >> "%MUSICSTUDIO_ROOT%\Config\Defaults.ini"
+    echo. >> "%MUSICSTUDIO_ROOT%\Config\Defaults.ini"
+    echo [Audio] >> "%MUSICSTUDIO_ROOT%\Config\Defaults.ini"
+    echo SoundFont=default.sf2 >> "%MUSICSTUDIO_ROOT%\Config\Defaults.ini"
+    echo NormalizeOutput=true >> "%MUSICSTUDIO_ROOT%\Config\Defaults.ini"
 )
 
 echo.
